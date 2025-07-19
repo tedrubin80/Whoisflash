@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domain Intelligence Platform - Threat Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); min-height: 100vh; }
+        .main-container { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 20px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); margin-top: 2rem; }
+        .hero-section { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border-radius: 20px 20px 0 0; padding: 2rem 0; }
+        .analysis-card { border: none; border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); margin-bottom: 1.5rem; transition: transform 0.2s ease; }
+        .analysis-card:hover { transform: translateY(-2px); }
+        .us-indicator { background: linear-gradient(135deg, #27ae60 0%, #229954 100%); }
+        .non-us-indicator { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); }
+        .privacy-indicator { background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); }
+        .metric-card { text-align: center; padding: 1.5rem; border-radius: 15px; background: white; border: 2px solid #ecf0f1; }
+        .metric-number { font-size: 2rem; font-weight: bold; }
+        .btn-analyze { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); border: none; border-radius: 25px; padding: 12px 30px; font-weight: 600; }
+        .loading-spinner { display: none; }
+        .threat-level-high { color: #e74c3c; font-weight: bold; }
+        .threat-level-medium { color: #f39c12; font-weight: bold; }
+        .threat-level-low { color: #27ae60; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-12 col-xl-11">
+                <div class="main-container">
+                    <!-- Hero Section -->
+                    <div class="hero-section">
+                        <div class="container">
+                            <div class="row">
+                                <div class="col-12 text-center">
+                                    <h1 class="display-4 fw-bold mb-3">
+                                        <i class="bi bi-shield-exclamation"></i> Domain Threat Intelligence
+                                    </h1>
+                                    <p class="lead mb-4">Automated US/Non-US Classification & Privacy Analysis</p>
+                                    
+                                    <!-- Quick Analysis Form -->
+                                    <div class="row justify-content-center">
+                                        <div class="col-md-8">
+                                            <div class="input-group input-group-lg">
+                                                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                                                <input type="text" class="form-control" id="domainInput" 
+                                                       placeholder="Enter domain for threat analysis (e.g., suspicious-domain.com)" 
+                                                       autocomplete="off">
+                                                <button class="btn btn-light btn-analyze" onclick="analyzeDomain()" id="analyzeBtn">
+                                                    <i class="bi bi-shield-check"></i> Analyze Threat
+                                                </button>
+                                            </div>
+                                            <div class="mt-2">
+                                                <small class="text-light">
+                                                    <i class="bi bi-info-circle"></i> 
+                                                    Instant classification: US vs Non-US registration, privacy detection, contact analysis
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Bulk Analysis -->
+                                    <div class="row justify-content-center mt-4">
+                                        <div class="col-md-6">
+                                            <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#bulkModal">
+                                                <i class="bi bi-list-ul"></i> Bulk Analysis
+                                            </button>
+                                            <button class="btn btn-outline-light ms-2" onclick="clearCache()">
+                                                <i class="bi bi-arrow-clockwise"></i> Clear Cache
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loading Indicator -->
+                    <div class="container loading-spinner" id="loadingSpinner">
+                        <div class="row py-5">
+                            <div class="col-12 text-center">
+                                <div class="spinner-border text-danger" style="width: 3rem; height: 3rem;" role="status">
+                                    <span class="visually-hidden">Analyzing...</span>
+                                </div>
+                                <h4 class="mt-3">Analyzing Domain Threat Level</h4>
+                                <p class="text-muted">Checking registrar, contacts, DNS, and geographic data...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Section -->
+                    <div class="container" id="resultsContainer" style="display: none;">
+                        <div class="row py-5">
+                            <div class="col-12">
+                                <!-- Threat Assessment Header -->
+                                <div class="alert d-flex align-items-center mb-4" id="threatAlert" role="alert">
+                                    <i class="bi me-2" id="threatIcon"></i>
+                                    <div>
+                                        <strong id="threatTitle"></strong> <span id="analyzedDomain"></span>
+                                        <div class="mt-1"><small id="threatDescription"></small></div>
+                                    </div>
+                                </div>
+
+                                <!-- Quick Intelligence Summary -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <h3 class="mb-3"><i class="bi bi-speedometer2"></i> Intelligence Summary</h3>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="metric-card">
+                                            <div class="metric-number" id="usClassification">Unknown</div>
+                                            <div class="text-muted">US Classification</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="metric-card">
+                                            <div class="metric-number" id="privacyStatus">Unknown</div>
+                                            <div class="text-muted">Privacy Status</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="metric-card">
+                                            <div class="metric-number" id="emailCount">0</div>
+                                            <div class="text-muted">Contact Emails</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="metric-card">
+                                            <div class="metric-number" id="nsCount">0</div>
+                                            <div class="text-muted">Name Servers</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Analysis Results -->
+                                <div class="row">
+                                    <!-- Domain Registration Info -->
+                                    <div class="col-12 col-lg-6 mb-4">
+                                        <div class="card analysis-card h-100">
+                                            <div class="card-header">
+                                                <h5 class="card-title mb-0"><i class="bi bi-building"></i> Registration Intelligence</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="registrationInfo"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- DNS & Infrastructure -->
+                                    <div class="col-12 col-lg-6 mb-4">
+                                        <div class="card analysis-card h-100">
+                                            <div class="card-header">
+                                                <h5 class="card-title mb-0"><i class="bi bi-diagram-3"></i> DNS Infrastructure</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="dnsInfo"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Email Contact Analysis -->
+                                    <div class="col-12 mb-4">
+                                        <div class="card analysis-card">
+                                            <div class="card-header">
+                                                <h5 class="card-title mb-0"><i class="bi bi-envelope-exclamation"></i> Contact Intelligence</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="emailAnalysis"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Name Server Geographic Analysis -->
+                                    <div class="col-12 mb-4">
+                                        <div class="card analysis-card">
+                                            <div class="card-header">
+                                                <h5 class="card-title mb-0"><i class="bi bi-geo-alt"></i> Geographic Intelligence</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="nameServerAnalysis"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Export & Actions -->
+                                    <div class="col-12">
+                                        <div class="card analysis-card">
+                                            <div class="card-header">
+                                                <h5 class="card-title mb-0"><i class="bi bi-download"></i> Export Intelligence Report</h5>
+                                            </div>
+                                            <div class="card-body text-center">
+                                                <p class="text-muted mb-3">Export threat intelligence analysis for reporting and documentation</p>
+                                                <button class="btn btn-success me-2" onclick="exportData('txt')">
+                                                    <i class="bi bi-file-text"></i> Export TXT Report
+                                                </button>
+                                                <button class="btn btn-info me-2" onclick="exportData('json')">
+                                                    <i class="bi bi-file-code"></i> Export JSON Data
+                                                </button>
+                                                <button class="btn btn-warning" onclick="copyToClipboard()">
+                                                    <i class="bi bi-clipboard"></i> Copy Summary
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Analysis Modal -->
+    <div class="modal fade" id="bulkModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-list-ul"></i> Bulk Domain Analysis</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="bulkDomains" class="form-label">Enter domains (one per line):</label>
+                        <textarea class="form-control" id="bulkDomains" rows="10" 
+                                  placeholder="suspicious-domain1.com&#10;suspicious-domain2.org&#10;threat-domain.net"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Maximum 10 domains per batch for performance</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" onclick="bulkAnalyze()">
+                        <i class="bi bi-shield-check"></i> Analyze All Domains
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentAnalysis = null;
+
+        async function analyzeDomain() {
+            const domain = document.getElementById('domainInput').value.trim();
+            if (!domain) return;
+
+            showLoading();
+            hideResults();
+
+            try {
+                const response = await fetch(`/api/analyze/${domain}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                currentAnalysis = data;
+                displayResults(data);
+            } catch (error) {
+                hideLoading();
+                alert(`Analysis failed: ${error.message}`);
+            }
+        }
+
+        function showLoading() {
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('resultsContainer').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingSpinner').style.display = 'none';
+        }
+
+        function hideResults() {
+            document.getElementById('resultsContainer').style.display = 'none';
+        }
+
+        function displayResults(data) {
+            hideLoading();
+            
+            // Update domain name
+            document.getElementById('analyzedDomain').textContent = data.domain;
+            
+            // Determine threat level and classification
+            const usSum = data.us_summary;
+            let threatLevel = 'low';
+            let threatClass = 'alert-success';
+            let threatIcon = 'bi-shield-check';
+            let threatTitle = 'Low Threat';
+            let threatDesc = 'Domain appears to be legitimately registered with standard practices.';
+
+            if (!usSum.domain_us && !usSum.registrar_us && usSum.privacy_emails > 0) {
+                threatLevel = 'high';
+                threatClass = 'alert-danger';
+                threatIcon = 'bi-shield-exclamation';
+                threatTitle = 'High Threat';
+                threatDesc = 'Non-US registration with privacy protection - requires investigation.';
+            } else if (!usSum.domain_us || !usSum.registrar_us) {
+                threatLevel = 'medium';
+                threatClass = 'alert-warning';
+                threatIcon = 'bi-shield-slash';
+                threatTitle = 'Medium Threat';
+                threatDesc = 'Partial non-US registration detected - monitor for suspicious activity.';
+            }
+
+            document.getElementById('threatAlert').className = `alert ${threatClass} d-flex align-items-center mb-4`;
+            document.getElementById('threatIcon').className = `bi ${threatIcon} me-2`;
+            document.getElementById('threatTitle').textContent = threatTitle;
+            document.getElementById('threatDescription').textContent = threatDesc;
+
+            // Update metrics
+            document.getElementById('usClassification').textContent = usSum.domain_us ? 'US-Based' : 'Non-US';
+            document.getElementById('usClassification').className = `metric-number ${usSum.domain_us ? 'threat-level-low' : 'threat-level-high'}`;
+            
+            document.getElementById('privacyStatus').textContent = data.has_privacy ? 'Protected' : 'Public';
+            document.getElementById('privacyStatus').className = `metric-number ${data.has_privacy ? 'threat-level-medium' : 'threat-level-low'}`;
+            
+            document.getElementById('emailCount').textContent = data.email_analysis.length;
+            document.getElementById('nsCount').textContent = data.nameserver_analysis.length;
+
+            // Registration Info
+            const regInfo = `
+                <div class="table-responsive">
+                    <table class="table table-borderless">
+                        <tr><td><strong>Registrar:</strong></td><td>${data.main_whois.registrar || 'Unknown'}</td></tr>
+                        <tr><td><strong>US Registrar:</strong></td><td><span class="badge ${usSum.registrar_us ? 'bg-success' : 'bg-danger'}">${usSum.registrar_us ? 'Yes' : 'No'}</span></td></tr>
+                        <tr><td><strong>Domain Country:</strong></td><td>${data.main_whois.registrant_country || 'Unknown'}</td></tr>
+                        <tr><td><strong>US Domain:</strong></td><td><span class="badge ${usSum.domain_us ? 'bg-success' : 'bg-danger'}">${usSum.domain_us ? 'Yes' : 'No'}</span></td></tr>
+                        <tr><td><strong>Created:</strong></td><td>${data.main_whois.creation_date || 'Unknown'}</td></tr>
+                        <tr><td><strong>Expires:</strong></td><td>${data.main_whois.expiration_date || 'Unknown'}</td></tr>
+                        <tr><td><strong>Privacy Service:</strong></td><td>${data.privacy_service || 'None detected'}</td></tr>
+                    </table>
+                </div>
+            `;
+            document.getElementById('registrationInfo').innerHTML = regInfo;
+
+            // DNS Info
+            let dnsInfo = `
+                <div class="mb-3">
+                    <strong>Last DNS Update:</strong> ${data.dns_data.last_update || 'Unknown'}<br>
+                    <strong>SOA Serial:</strong> ${data.dns_data.serial || 'Unknown'}
+                </div>
+            `;
+            
+            if (data.dns_data.records.A && data.dns_data.records.A.length > 0) {
+                dnsInfo += `<div class="mb-2"><strong>A Records:</strong><br>`;
+                data.dns_data.records.A.forEach(record => {
+                    dnsInfo += `<span class="font-monospace">${record}</span><br>`;
+                });
+                dnsInfo += `</div>`;
+            }
+
+            if (data.dns_data.dig_output) {
+                dnsInfo += `<div class="mt-3"><strong>DIG Output:</strong><br><pre class="bg-light p-2 rounded">${data.dns_data.dig_output}</pre></div>`;
+            }
+            
+            document.getElementById('dnsInfo').innerHTML = dnsInfo;
+
+            // Email Analysis
+            let emailHtml = '';
+            if (data.email_analysis.length > 0) {
+                data.email_analysis.forEach(email => {
+                    const privacyBadge = email.is_privacy ? 'bg-warning' : 'bg-success';
+                    const usBadge = email.is_us ? 'bg-success' : 'bg-danger';
+                    
+                    emailHtml += `
+                        <div class="card mb-2">
+                            <div class="card-body py-2">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>${email.email}</strong>
+                                        <div class="mt-1">
+                                            <span class="badge ${privacyBadge}">${email.is_privacy ? 'Privacy Protected' : 'Direct Contact'}</span>
+                                            <span class="badge ${usBadge} ms-1">${email.is_us ? 'US-Based' : 'Non-US'}</span>
+                                        </div>
+                                        ${email.privacy_service ? `<small class="text-muted">Service: ${email.privacy_service}</small>` : ''}
+                                    </div>
+                                    <div class="text-end">
+                                        ${email.whois_data ? `
+                                            <small class="text-muted">
+                                                Domain: ${email.domain}<br>
+                                                Registrar: ${email.whois_data.registrar || 'Unknown'}
+                                            </small>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                emailHtml = '<div class="text-muted">No email addresses found in WHOIS data</div>';
+            }
+            document.getElementById('emailAnalysis').innerHTML = emailHtml;
+
+            // Name Server Analysis
+            let nsHtml = '';
+            if (data.nameserver_analysis.length > 0) {
+                data.nameserver_analysis.forEach(ns => {
+                    const usBadge = ns.is_us ? 'bg-success' : 'bg-danger';
+                    
+                    nsHtml += `
+                        <div class="card mb-2">
+                            <div class="card-body py-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>${ns.nameserver}</strong>
+                                        <span class="badge ${usBadge} ms-2">${ns.is_us ? 'US-Based' : 'Non-US'}</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-muted">
+                                            IP: ${ns.ip}<br>
+                                            Country: ${ns.geolocation.country}<br>
+                                            Region: ${ns.geolocation.region}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                nsHtml = '<div class="text-muted">No name server data available</div>';
+            }
+            document.getElementById('nameServerAnalysis').innerHTML = nsHtml;
+
+            // Show results
+            document.getElementById('resultsContainer').style.display = 'block';
+            document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function bulkAnalyze() {
+            const domains = document.getElementById('bulkDomains').value
+                .split('\n')
+                .map(d => d.trim())
+                .filter(d => d.length > 0)
+                .slice(0, 10);
+
+            if (domains.length === 0) return;
+
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('bulkModal')).hide();
+            
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/bulk_analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domains: domains })
+                });
+                
+                const results = await response.json();
+                displayBulkResults(results);
+            } catch (error) {
+                hideLoading();
+                alert(`Bulk analysis failed: ${error.message}`);
+            }
+        }
+
+        function displayBulkResults(results) {
+            hideLoading();
+            
+            let html = '<div class="table-responsive"><table class="table table-striped"><thead><tr>';
+            html += '<th>Domain</th><th>US Status</th><th>Privacy</th><th>Threat Level</th><th>Actions</th>';
+            html += '</tr></thead><tbody>';
+            
+            for (const [domain, data] of Object.entries(results)) {
+                if (data.error) {
+                    html += `<tr><td>${domain}</td><td colspan="4" class="text-danger">Error: ${data.error}</td></tr>`;
+                    continue;
+                }
+                
+                const usStatus = data.us_summary.domain_us ? 'US-Based' : 'Non-US';
+                const privacy = data.has_privacy ? 'Protected' : 'Public';
+                let threatLevel = 'Low';
+                let threatClass = 'text-success';
+                
+                if (!data.us_summary.domain_us && data.has_privacy) {
+                    threatLevel = 'High';
+                    threatClass = 'text-danger';
+                } else if (!data.us_summary.domain_us) {
+                    threatLevel = 'Medium';
+                    threatClass = 'text-warning';
+                }
+                
+                html += `<tr>
+                    <td><strong>${domain}</strong></td>
+                    <td><span class="badge ${data.us_summary.domain_us ? 'bg-success' : 'bg-danger'}">${usStatus}</span></td>
+                    <td><span class="badge ${data.has_privacy ? 'bg-warning' : 'bg-info'}">${privacy}</span></td>
+                    <td><span class="${threatClass}">${threatLevel}</span></td>
+                    <td><button class="btn btn-sm btn-outline-primary" onclick="analyzeSingle('${domain}')">Details</button></td>
+                </tr>`;
+            }
+            
+            html += '</tbody></table></div>';
+            
+            document.getElementById('resultsContainer').innerHTML = `
+                <div class="row py-5">
+                    <div class="col-12">
+                        <h3><i class="bi bi-list-check"></i> Bulk Analysis Results</h3>
+                        ${html}
+                    </div>
+                </div>
+            `;
+            document.getElementById('resultsContainer').style.display = 'block';
+        }
+
+        function analyzeSingle(domain) {
+            document.getElementById('domainInput').value = domain;
+            analyzeDomain();
+        }
+
+        function exportData(format) {
+            if (!currentAnalysis) return;
+            window.open(`/export/${format}/${currentAnalysis.domain}`, '_blank');
+        }
+
+        function copyToClipboard() {
+            if (!currentAnalysis) return;
+            
+            const summary = `Domain: ${currentAnalysis.domain}
+US-Based: ${currentAnalysis.us_summary.domain_us ? 'Yes' : 'No'}
+Privacy Protected: ${currentAnalysis.has_privacy ? 'Yes' : 'No'}
+Registrar: ${currentAnalysis.main_whois.registrar || 'Unknown'}
+Threat Assessment: ${currentAnalysis.us_summary.domain_us ? 'Low' : 'High'}`;
+            
+            navigator.clipboard.writeText(summary);
+            alert('Summary copied to clipboard!');
+        }
+
+        function clearCache() {
+            fetch('/api/clear_cache', { method: 'POST' })
+                .then(() => alert('Cache cleared successfully!'))
+                .catch(() => alert('Failed to clear cache'));
+        }
+
+        // Enter key support
+        document.getElementById('domainInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                analyzeDomain();
+            }
+        });
+
+        // Auto-focus
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('domainInput').focus();
+        });
+    </script>
+</body>
+</html>

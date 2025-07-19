@@ -1,0 +1,76 @@
+domain-intelligence-platform/
+├── app.py                          # Main Flask application
+├── requirements.txt                # Python dependencies
+├── runtime.txt                     # Python version for Railway
+├── Procfile                        # Railway/Heroku deployment config
+├── railway.json                    # Railway-specific configuration
+├── .gitignore                      # Git ignore file
+├── README.md                       # Project documentation
+├── LICENSE                         # Open source license
+├── config.py                       # Configuration settings
+├── wsgi.py                         # WSGI entry point
+├── 
+├── templates/                      # HTML templates
+│   ├── index.html                  # Main interface
+│   ├── base.html                   # Base template
+│   └── bulk_results.html           # Bulk analysis results
+├── 
+├── static/                         # Static assets
+│   ├── css/
+│   │   ├── custom.css              # Custom styles
+│   │   └── threat-indicators.css   # Threat level styling
+│   ├── js/
+│   │   ├── main.js                 # Main JavaScript
+│   │   ├── analysis.js             # Analysis functions
+│   │   └── export.js               # Export functionality
+│   └── images/
+│       ├── logo.png                # Platform logo
+│       └── threat-icons/           # Threat level icons
+├── 
+├── api/                            # API modules
+│   ├── __init__.py
+│   ├── whois_analyzer.py           # WHOIS analysis logic
+│   ├── dns_analyzer.py             # DNS analysis logic
+│   ├── threat_classifier.py       # Threat classification
+│   └── geo_analyzer.py             # Geographic analysis
+├── 
+├── models/                         # Data models
+│   ├── __init__.py
+│   ├── domain.py                   # Domain model
+│   ├── analysis_result.py          # Analysis result model
+│   └── cache.py                    # Cache management
+├── 
+├── utils/                          # Utility functions
+│   ├── __init__.py
+│   ├── validators.py               # Domain validation
+│   ├── parsers.py                  # Data parsing utilities
+│   ├── exporters.py                # Export functionality
+│   └── rate_limiter.py             # Rate limiting
+├── 
+├── tests/                          # Test suite
+│   ├── __init__.py
+│   ├── test_whois.py              # WHOIS analysis tests
+│   ├── test_dns.py                # DNS analysis tests
+│   ├── test_api.py                # API endpoint tests
+│   └── test_threat_classification.py
+├── 
+├── data/                           # Data files
+│   ├── privacy_services.json      # Privacy service database
+│   ├── registrar_categories.json  # Registrar classifications
+│   └── country_codes.json         # Country code mappings
+├── 
+├── docs/                           # Documentation
+│   ├── API.md                      # API documentation
+│   ├── DEPLOYMENT.md               # Deployment guide
+│   ├── CONFIGURATION.md            # Configuration guide
+│   └── screenshots/                # Interface screenshots
+├── 
+├── scripts/                        # Utility scripts
+│   ├── setup_db.py                # Database initialization
+│   ├── update_cache.py             # Cache management
+│   └── backup_data.py              # Data backup
+└── 
+└── database/                       # Database files (gitignored)
+    ├── whois_cache.db              # WHOIS cache database
+    ├── dns_cache.db                # DNS cache database
+    └── backups/                    # Database backups
